@@ -43,3 +43,6 @@ parity-clib-examples/cpp/build/
 .vscode
 rls/
 /parity.*
+/ethcore/src/ethereum/*.bak
+/parity/cli/*.bak
+/parity/*.bak
