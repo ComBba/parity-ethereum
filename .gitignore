@@ -46,3 +46,4 @@ rls/
 /ethcore/src/ethereum/*.bak
 /parity/cli/*.bak
 /parity/*.bak
+/.svn
