@@ -61,6 +61,7 @@ macro_rules! bundle_test_machine {
 bundle_release_spec! {
 	"ethereum/callisto" => new_callisto,
 	"ethereum/classic" => new_classic,
+	"ethereum/ethersocial" => new_ethersocial,
 	"ethereum/ellaism" => new_ellaism,
 	"ethereum/evantestcore" => new_evantestcore,
 	"ethereum/evancore" => new_evancore,

@@ -35,6 +35,7 @@ use crate::configuration;
 pub enum SpecType {
 	Foundation,
 	Classic,
+	Ethersocial,
 	Poanet,
 	Xdai,
 	Volta,
@@ -76,6 +77,7 @@ impl str::FromStr for SpecType {
 			"volta" => SpecType::Volta,
 			"ewc" | "energyweb" => SpecType::Ewc,
 			"musicoin" => SpecType::Musicoin,
+			"ethersocial" => SpecType::Ethersocial,
 			"ellaism" => SpecType::Ellaism,
 			"mix" => SpecType::Mix,
 			"callisto" => SpecType::Callisto,
@@ -85,7 +87,7 @@ impl str::FromStr for SpecType {
 			"ropsten" => SpecType::Ropsten,
 			"kovan" => SpecType::Kovan,
 			"rinkeby" => SpecType::Rinkeby,
-			"goerli" | "görli" | "testnet" => SpecType::Goerli,
+			"goerli" | "gorli" | "testnet" => SpecType::Goerli,
 			"kotti" => SpecType::Kotti,
 			"sokol" | "poasokol" => SpecType::Sokol,
 			"evantestcore" => SpecType::Evantestcore,
@@ -102,6 +104,7 @@ impl fmt::Display for SpecType {
 		f.write_str(match *self {
 			SpecType::Foundation => "foundation",
 			SpecType::Classic => "classic",
+			SpecType::Ethersocial => "ethersocial",
 			SpecType::Poanet => "poanet",
 			SpecType::Xdai => "xdai",
 			SpecType::Volta => "volta",
@@ -133,6 +136,7 @@ impl SpecType {
 		match *self {
 			SpecType::Foundation => Ok(spec::new_foundation(params)),
 			SpecType::Classic => Ok(spec::new_classic(params)),
+			SpecType::Ethersocial => Ok(spec::new_ethersocial(params)),
 			SpecType::Poanet => Ok(spec::new_poanet(params)),
 			SpecType::Xdai => Ok(spec::new_xdai(params)),
 			SpecType::Volta => Ok(spec::new_volta(params)),
@@ -409,7 +413,7 @@ mod tests {
 		assert_eq!(SpecType::Kovan, "kovan".parse().unwrap());
 		assert_eq!(SpecType::Rinkeby, "rinkeby".parse().unwrap());
 		assert_eq!(SpecType::Goerli, "goerli".parse().unwrap());
-		assert_eq!(SpecType::Goerli, "görli".parse().unwrap());
+		assert_eq!(SpecType::Goerli, "gorli".parse().unwrap());
 		assert_eq!(SpecType::Goerli, "testnet".parse().unwrap());
 		assert_eq!(SpecType::Kotti, "kotti".parse().unwrap());
 		assert_eq!(SpecType::Sokol, "sokol".parse().unwrap());
