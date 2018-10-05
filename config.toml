@@ -4,40 +4,20 @@
 [parity]
 # Custom chain
 chain = "ethersocial"
-# Parity continously syncs the chain
-mode = "active"
-# No updates will be auto-installed
-auto_update = "none"
-# Disables auto downloading of new releases. Not recommended.
-no_download = true
 # Blockchain and settings will be stored in ~/.local/share/io.parity.ethersocial.
 base_path = "~/.local/share/io.parity.ethersocial"
 
-[ui]
-disable = true
-# List of allowed Host header values. This option will validate the Host header sent by the browser, it is additional security against some attack vectors. Special options: "all", "none",.
-hosts = ["all"]
-
 [network]
-warp = false
 discovery = true
-# Fill up the config manually and provide your public IP address.
-nat = "extip:115.68.99.203"
 # Parity will listen for connections on port 50505.
 port = 50505
 # Parity will try to maintain connection to at least 30 peers.
 min_peers = 30
 # Parity will maintain at most 60 peers.
 max_peers = 60
-# Parity will connect only to public network IP addresses.
-allow_ips = "public"
 reserved_only = false
 # Specify a path to a file with peers' enodes to be always connected to.
 reserved_peers = "./reserved_peers"
-
-[websockets]
-disable = true
-origins = ["none"]
 
 [rpc]
 #  JSON-RPC will be listening for connections on IP all.
@@ -47,11 +27,11 @@ cors = ["*"]
 # Allow connections only using specified addresses.
 hosts = ["all"]
 # Only selected APIs will be exposed over this interface.
-apis = ["web3", "eth", "pubsub", "net", "parity", "parity_pubsub", "traces", "rpc", "shh", "shh_pubsub", "personal", "parity_accounts"]
+apis = ["web3", "eth", "pubsub", "net", "parity", "parity_pubsub", "traces", "rpc", "shh", "shh_pubsub", "personal", "parity_account$
 # Threads for handling incoming connections for HTTP JSON-RPC server.
-server_threads = 2
-# Turn on additional processing threads in all RPC servers. Setting this to non-zero value allows parallel cpu-heavy queries execution.
-processing_threads = 8
+server_threads = 16
+# Turn on additional processing threads in all RPC servers. Setting this to non-zero value allows parallel cpu-heavy queries executi$
+processing_threads = 16
 
 [mining]
 author = "0xe3ec5ebd3e822c972d802a0ee4e0ec080b8237ba"
