@@ -27,10 +27,10 @@ cors = ["*"]
 # Allow connections only using specified addresses.
 hosts = ["all"]
 # Only selected APIs will be exposed over this interface.
-apis = ["web3", "eth", "pubsub", "net", "parity", "parity_pubsub", "traces", "rpc", "shh", "shh_pubsub", "personal", "parity_account$
+apis = ["web3", "eth", "pubsub", "net", "parity", "parity_pubsub", "traces", "rpc", "shh", "shh_pubsub", "personal", "parity_accounts"]
 # Threads for handling incoming connections for HTTP JSON-RPC server.
 server_threads = 16
-# Turn on additional processing threads in all RPC servers. Setting this to non-zero value allows parallel cpu-heavy queries executi$
+# Turn on additional processing threads in all RPC servers. Setting this to non-zero value allows parallel cpu-heavy queries execution.
 processing_threads = 16
 
 [mining]
