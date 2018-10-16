@@ -5,7 +5,7 @@
 # Custom chain
 chain = "ethersocial"
 # Blockchain and settings will be stored in ~/.local/share/io.parity.ethersocial.
-base_path = "~/.local/share/io.parity.ethersocial"
+base_path = "$HOME/.local/share/io.parity.ethersocial"
 
 [network]
 discovery = true
