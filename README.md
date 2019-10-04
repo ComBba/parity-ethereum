@@ -183,3 +183,18 @@ To start Parity as a regular user using systemd init:
 1. Copy `./scripts/parity.service` to your
 systemd user directory (usually `~/.config/systemd/user`).
 2. To configure Parity, write a `/etc/parity/config.toml` config file, see [Configuring Parity](https://paritytech.github.io/wiki/Configuring-Parity) for details.
+
+
+### ETC...
+##curl https://sh.rustup.rs -sSf | sh
+
+##export PATH="$HOME/.cargo/bin:$PATH"
+
+##sudo apt-get install build-essential
+
+##sudo apt-get install libudev-dev
+
+##sudo apt-get install cmake
+
+##getopts 0.2.15 -> getopts 0.2.21 / unicode-width 0.1.4 -> unicode-width 0.1.6
+#https://github.com/nachoparker/dutree/pull/24/commits/c93e7e3e166e2ed7e839a156491eb34ca3fc4e85
