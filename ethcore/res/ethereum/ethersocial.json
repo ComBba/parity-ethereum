@@ -9,7 +9,6 @@
 				"durationLimit": "0x0d",
 				"blockReward": "0x7ce66c50e2840000",
 				"homesteadTransition": "0x1",
-				"eip150Transition": "0x1",
 				"eip160Transition": 845000,
 
 				"eip161abcTransition": 845000,
