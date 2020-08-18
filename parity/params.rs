@@ -136,7 +136,7 @@ impl SpecType {
 		match *self {
 			SpecType::Foundation => Ok(spec::new_foundation(params)),
 			SpecType::Classic => Ok(spec::new_classic(params)),
-			SpecType::Ethersocial => Ok(ethereum::new_ethersocial(params)),
+			SpecType::Ethersocial => Ok(spec::new_ethersocial(params)),
 			SpecType::Poanet => Ok(spec::new_poanet(params)),
 			SpecType::Xdai => Ok(spec::new_xdai(params)),
 			SpecType::Volta => Ok(spec::new_volta(params)),
