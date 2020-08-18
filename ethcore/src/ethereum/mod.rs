@@ -56,6 +56,11 @@ pub fn new_classic<'a, T: Into<SpecParams<'a>>>(params: T) -> Spec {
 	load(params.into(), include_bytes!("../../res/ethereum/classic.json"))
 }
 
+/// Create a new EtherSocial chain spec.
+pub fn new_ethersocial<'a, T: Into<SpecParams<'a>>>(params: T) -> Spec {
+	load(params.into(), include_bytes!("../../res/ethereum/ethersocial.json"))
+}
+
 /// Create a new Expanse mainnet chain spec.
 pub fn new_expanse<'a, T: Into<SpecParams<'a>>>(params: T) -> Spec {
 	load(params.into(), include_bytes!("../../res/ethereum/expanse.json"))
@@ -99,11 +104,6 @@ pub fn new_ropsten<'a, T: Into<SpecParams<'a>>>(params: T) -> Spec {
 /// Create a new Morden chain spec.
 pub fn new_morden<'a, T: Into<SpecParams<'a>>>(params: T) -> Spec {
 	load(params.into(), include_bytes!("../../res/ethereum/morden.json"))
-}
-
-/// Create a new EtherSocial chain spec.
-pub fn new_ethersocial<'a, T: Into<SpecParams<'a>>>(params: T) -> Spec {
-	load(params.into(), include_bytes!("../../res/ethereum/ethersocial.json"))
 }
 
 // For tests

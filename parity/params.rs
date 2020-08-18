@@ -104,12 +104,12 @@ impl fmt::Display for SpecType {
 		f.write_str(match *self {
 			SpecType::Foundation => "foundation",
 			SpecType::Classic => "classic",
+			SpecType::Ethersocial => "ethersocial",
 			SpecType::Poanet => "poanet",
 			SpecType::Xdai => "xdai",
 			SpecType::Volta => "volta",
 			SpecType::Ewc => "energyweb",
 			SpecType::Musicoin => "musicoin",
-			SpecType::Ethersocial => "ethersocial",
 			SpecType::Ellaism => "ellaism",
 			SpecType::Mix => "mix",
 			SpecType::Callisto => "callisto",
