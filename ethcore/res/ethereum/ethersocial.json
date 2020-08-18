@@ -11,7 +11,7 @@
 				"homesteadTransition": "0x1",
 				"eip100bTransition": 600000,
 				"bombDefuseTransition": "0x0",
-				"ecip1017EraRounds": 10000000,
+				"ecip1017EraRounds": 10000000
 			}
 		}
 	},
