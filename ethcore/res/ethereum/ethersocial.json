@@ -27,6 +27,7 @@
 		"wasmActivationTransition": 10000000,
 		"maxCodeSize": "0x6000",
 		"maxCodeSizeTransition": "0x1",
+		"eip140Transition": "0x0",
 		"eip150Transition": "0x1",
 		"eip160Transition": 845000,
 		"eip161abcTransition": 845000,
