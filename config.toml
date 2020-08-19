@@ -5,7 +5,7 @@
 # Custom chain
 chain = "ethersocial"
 # Blockchain and settings will be stored in ~/.local/share/io.parity.ethersocial.
-base_path = "$HOME/.local/share/io.parity.ethersocial"
+base_path = "$HOME/forEsn/data_ESN_forParity"
 
 [network]
 discovery = true
@@ -20,6 +20,7 @@ reserved_only = false
 reserved_peers = "./reserved_peers"
 
 [rpc]
+port = 19545
 #  JSON-RPC will be listening for connections on IP all.
 interface = "all"
 # Allows Cross-Origin Requests from domain '*'.
@@ -27,11 +28,11 @@ cors = ["*"]
 # Allow connections only using specified addresses.
 hosts = ["all"]
 # Only selected APIs will be exposed over this interface.
-apis = ["web3", "eth", "pubsub", "net", "parity", "parity_pubsub", "traces", "rpc", "shh", "shh_pubsub", "personal", "parity_accounts"]
+apis = ["web3", "eth", "pubsub", "net", "parity", "parity_pubsub", "traces", "rpc", "shh", "shh_pubsub", "parity_accounts"]
 # Threads for handling incoming connections for HTTP JSON-RPC server.
-server_threads = 16
+server_threads = 12
 # Turn on additional processing threads in all RPC servers. Setting this to non-zero value allows parallel cpu-heavy queries execution.
-processing_threads = 16
+processing_threads = 24
 
 [mining]
 author = "0xe3ec5ebd3e822c972d802a0ee4e0ec080b8237ba"
@@ -46,10 +47,7 @@ pruning = "archive"
 # Enables Fat DB
 fat_db = "on"
 
-[snapshots]
-disable_periodic = true
-
-[misc]
-color = true
+#[misc]
+#color = true
 # Logging pattern (`<module>=<level>`, e.g. `own_tx=trace`).
 #logging = "discovery=trace"
