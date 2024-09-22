@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <title>계정 목록</title>
+</head>
+<body>
+    <h1>계정 목록</h1>
+    <table border="1">
+        <tr>
+            <th><a href="?sort=address&order={{ 'asc' if order == 'desc' else 'desc' }}">주소</a></th>
+            <th><a href="?sort=balance&order={{ 'asc' if order == 'desc' else 'desc' }}">잔액</a></th>
+            <th><a href="?sort=creation_block&order={{ 'asc' if order == 'desc' else 'desc' }}">생성 블록</a></th>
+        </tr>
+        {% for account in accounts %}
+        <tr>
+            <td><a href="{{ url_for('account_detail', address=account['address']) }}">{{ account['address'] }}</a></td>
+            <td>{{ account['balance'] }}</td>
+            <td>{{ account['creation_block'] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <div>
+        {% if page > 1 %}
+            <a href="?page={{ page - 1 }}&sort={{ sort }}&order={{ order }}">이전</a>
+        {% endif %}
+        <span>페이지 {{ page }} / {{ total_pages }}</span>
+        {% if page < total_pages %}
+            <a href="?page={{ page + 1 }}&sort={{ sort }}&order={{ order }}">다음</a>
+        {% endif %}
+    </div>
+</body>
+</html>

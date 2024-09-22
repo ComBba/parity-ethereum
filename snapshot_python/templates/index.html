@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <title>ESN 토큰 스냅샷</title>
+</head>
+<body>
+    <h1>ESN 토큰 스냅샷</h1>
+    <p>블록 번호 {{ target_block }} 에서의 계정 정보 및 거래 내역을 제공합니다.</p>
+    <ul>
+        <li><a href="{{ url_for('accounts') }}">계정 목록 보기</a></li>
+        <li>계정 주소로 검색하기:</li>
+        <form action="{{ url_for('account_detail') }}" method="get">
+            <input type="text" name="address" placeholder="계정 주소 입력">
+            <input type="submit" value="검색">
+        </form>
+    </ul>
+</body>
+</html>

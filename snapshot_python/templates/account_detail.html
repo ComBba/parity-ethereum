@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <title>계정 상세 정보</title>
+</head>
+<body>
+    <h1>계정 상세 정보</h1>
+    <p>주소: {{ account['address'] }}</p>
+    <p>잔액: {{ account['balance'] }}</p>
+    <p>생성 블록: {{ account['creation_block'] }}</p>
+
+    <h2>거래 내역</h2>
+    <table border="1">
+        <tr>
+            <th>트랜잭션 해시</th>
+            <th>블록 번호</th>
+            <th>타임스탬프</th>
+            <th>From</th>
+            <th>To</th>
+            <th>금액</th>
+        </tr>
+        {% for tx in transactions %}
+        <tr>
+            <td>{{ tx['tx_hash'] }}</td>
+            <td>{{ tx['block_number'] }}</td>
+            <td>{{ tx['timestamp'] }}</td>
+            <td>{{ tx['from_address'] }}</td>
+            <td>{{ tx['to_address'] }}</td>
+            <td>{{ tx['value'] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
