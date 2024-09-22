@@ -13,6 +13,7 @@ IPC_PATH = '/home/barahime/esn_services/chaindata/gesc.ipc'  # Parity 노드의 
 TARGET_BLOCK = 6000000  # 스냅샷을 찍을 블록 번호
 DATABASE_FILE = 'balances.db'  # SQLite 데이터베이스 파일명
 OUTPUT_JSON_FILE = 'balances.json'  # 최종 출력될 JSON 파일명
+ETHERSOCIAL_JSON_FILE = '/home/barahime/esn_services/parity-ethereum/ethcore/res/ethereum/ethersocial.json'  # 초기 accounts 파일 경로
 COMMIT_INTERVAL = 1000  # 데이터베이스 커밋 간격
 
 def main():
@@ -58,6 +59,21 @@ def main():
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_transactions_to_address ON transactions (to_address)')
     conn.commit()
     logging.info("데이터베이스 테이블이 준비되었습니다.")
+
+    # 초기 계정 데이터 로드
+    logging.info(f"'{ETHERSOCIAL_JSON_FILE}' 파일에서 초기 계정 정보 로드 중...")
+    with open(ETHERSOCIAL_JSON_FILE, 'r') as f:
+        genesis_data = json.load(f)
+        accounts = genesis_data.get('accounts', {})
+
+        # 초기 계정 데이터 저장
+        for address, account_data in accounts.items():
+            balance = account_data.get('balance', '0')
+            if balance != '0':  # 잔액이 0이 아닌 경우만 저장
+                cursor.execute('INSERT OR REPLACE INTO balances (address, balance, creation_block) VALUES (?, ?, 0)', 
+                               (Web3.to_checksum_address(address), balance))
+        conn.commit()
+    logging.info("초기 계정 정보가 데이터베이스에 저장되었습니다.")
 
     # 블록 0부터 TARGET_BLOCK까지 순회
     logging.info(f"블록 0부터 {TARGET_BLOCK}까지 순회하여 데이터 수집을 시작합니다.")
