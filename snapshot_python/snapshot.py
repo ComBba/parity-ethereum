@@ -29,8 +29,11 @@ def main():
     logging.info("Parity 노드에 성공적으로 연결되었습니다.")
 
     # SQLite 데이터베이스 연결
-    conn = sqlite3.connect(DATABASE_FILE)
+    conn = sqlite3.connect(DATABASE_FILE, timeout=30, check_same_thread=False)
     cursor = conn.cursor()
+
+    # WAL 모드 활성화
+    cursor.execute('PRAGMA journal_mode=WAL;')
 
     # 테이블 생성
     logging.info("데이터베이스 테이블 생성 중...")
@@ -57,6 +60,13 @@ def main():
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_transactions_block_number ON transactions (block_number)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_transactions_from_address ON transactions (from_address)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_transactions_to_address ON transactions (to_address)')
+    # 메타데이터 테이블 생성
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS metadata (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )
+    ''')
     conn.commit()
     logging.info("데이터베이스 테이블이 준비되었습니다.")
 
@@ -75,12 +85,22 @@ def main():
         conn.commit()
     logging.info("초기 계정 정보가 데이터베이스에 저장되었습니다.")
 
-    # 블록 0부터 TARGET_BLOCK까지 순회
-    logging.info(f"블록 0부터 {TARGET_BLOCK}까지 순회하여 데이터 수집을 시작합니다.")
+    # 마지막으로 처리된 블록 번호 가져오기
+    last_processed_block = get_last_processed_block(cursor)
+    start_block = last_processed_block + 1
+
+    # TARGET_BLOCK이 last_processed_block보다 큰지 확인
+    if TARGET_BLOCK <= last_processed_block:
+        logging.info(f"TARGET_BLOCK({TARGET_BLOCK})이 이미 처리된 블록({last_processed_block})보다 작거나 같습니다. 더 높은 TARGET_BLOCK을 설정하세요.")
+        conn.close()
+        return
+
+    # 블록 처리 루프 시작
+    logging.info(f"블록 {start_block}부터 {TARGET_BLOCK}까지 순회하여 데이터 수집을 시작합니다.")
     total_blocks = TARGET_BLOCK + 1  # 블록 번호는 0부터 시작하므로 +1
     commit_counter = 0  # 커밋 카운터 초기화
 
-    for block_number in tqdm(range(0, total_blocks)):
+    for block_number in tqdm(range(start_block, total_blocks)):
         try:
             block = w3.eth.get_block(block_number, full_transactions=True)
         except Exception as e:
@@ -127,6 +147,9 @@ def main():
         except Exception as e:
             logging.error(f"블록 {block_number}의 트레이스를 가져오는 중 오류 발생: {e}")
 
+        # 마지막으로 처리된 블록 업데이트
+        set_last_processed_block(cursor, block_number)
+
         # 일정 간격으로 커밋
         commit_counter += 1
         if commit_counter >= COMMIT_INTERVAL:
@@ -159,10 +182,32 @@ def main():
     # 연결 종료
     conn.close()
 
+def get_last_processed_block(cursor):
+    """
+    metadata 테이블에서 마지막으로 처리된 블록 번호를 가져옵니다.
+    없을 경우 -1을 반환합니다.
+    """
+    cursor.execute("SELECT value FROM metadata WHERE key = 'last_processed_block'")
+    result = cursor.fetchone()
+    if result:
+        return int(result[0])
+    else:
+        return -1  # 초기 블록 번호 설정 (0부터 시작하기 위해)
+
+def set_last_processed_block(cursor, block_number):
+    """
+    metadata 테이블에 마지막으로 처리된 블록 번호를 저장합니다.
+    """
+    cursor.execute("INSERT OR REPLACE INTO metadata (key, value) VALUES ('last_processed_block', ?)", (str(block_number),))
+
 def process_address(w3, cursor, address, current_block, is_contract=False):
     if not address:
         return
-    address = Web3.to_checksum_address(address)
+    try:
+        address = Web3.to_checksum_address(address)
+    except Exception as e:
+        logging.error(f"유효하지 않은 주소 형식: {address} - 오류: {e}")
+        return
 
     # 이미 존재하는 주소인지 확인
     cursor.execute('SELECT creation_block FROM balances WHERE address = ?', (address,))
