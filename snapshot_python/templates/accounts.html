@@ -3,20 +3,57 @@
 <head>
     <meta charset="utf-8">
     <title>계정 목록</title>
+    <style>
+        /* 전체 폰트를 고정 너비 폰트로 설정 */
+        body {
+            font-family: 'Courier New', Courier, monospace;
+        }
+        /* 테이블 스타일 */
+        table {
+            width: 900px;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 8px;
+            border: 1px solid #ddd;
+        }
+        /* 각 열의 너비와 정렬 설정 */
+        th.address, td.address {
+            width: 400px;
+            text-align: center;
+        }
+        th.balance, td.balance {
+            width: 400px;
+            text-align: right;
+        }
+        th.creation_block, td.creation_block {
+            width: 100px;
+            text-align: right;
+        }
+        /* 헤더 스타일 */
+        th {
+            background-color: #f2f2f2;
+        }
+        /* 링크 스타일 */
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+    </style>
 </head>
 <body>
     <h1>계정 목록</h1>
-    <table border="1">
+    <table>
         <tr>
-            <th><a href="?sort=address&order={{ 'asc' if order == 'desc' else 'desc' }}">주소</a></th>
-            <th><a href="?sort=balance&order={{ 'asc' if order == 'desc' else 'desc' }}">잔액</a></th>
-            <th><a href="?sort=creation_block&order={{ 'asc' if order == 'desc' else 'desc' }}">생성 블록</a></th>
+            <th class="address"><a href="?sort=address&order={{ 'asc' if sort != 'address' or order == 'desc' else 'desc' }}">주소</a></th>
+            <th class="balance"><a href="?sort=balance&order={{ 'asc' if sort != 'balance' or order == 'desc' else 'desc' }}">잔액</a></th>
+            <th class="creation_block"><a href="?sort=creation_block&order={{ 'asc' if sort != 'creation_block' or order == 'desc' else 'desc' }}">생성 블록</a></th>
         </tr>
         {% for account in accounts %}
         <tr>
-            <td><a href="{{ url_for('account_detail', address=account['address']) }}">{{ account['address'] }}</a></td>
-            <td>{{ account['balance'] }}</td>
-            <td>{{ account['creation_block'] }}</td>
+            <td class="address"><a href="{{ url_for('account_detail', address=account['address']) }}">{{ account['address'] }}</a></td>
+            <td class="balance">{{ account['balance'] | format_esn }}</td>
+            <td class="creation_block">{{ "{:,}".format(account['creation_block']) }}</td>
         </tr>
         {% endfor %}
     </table>
