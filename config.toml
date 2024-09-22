@@ -1,5 +1,7 @@
 # This config should be placed in following path:
 #   ~/.local/share/io.parity.ethereum/config.toml
+# ./target/release/parity --datadir ./chaindata/ --chain ethersocial --port 50505 --mode active --ipc-path /home/barahime/esn_services/chaindata/gesc.ipc --fat-db=on --pruning=archive --author 0x5811590907050746b897eFE65FeA7B65710E1a2c --max-peers 60 --tracing=on 
+
 
 [parity]
 # Custom chain
@@ -12,22 +14,24 @@ discovery = true
 # Parity will listen for connections on port 50505.
 port = 50505
 # Parity will try to maintain connection to at least 30 peers.
-min_peers = 30
+min_peers = 10
 # Parity will maintain at most 60 peers.
-max_peers = 60
+max_peers = 20
 reserved_only = false
 # Specify a path to a file with peers' enodes to be always connected to.
-reserved_peers = "./reserved_peers"
+#reserved_peers = "./reserved_peers"
 
 [rpc]
+# JSON-RPC over HTTP will be accessible on port 17545.
+port = 17545
 #  JSON-RPC will be listening for connections on IP all.
-interface = "all"
+interface = "127.0.0.1"
 # Allows Cross-Origin Requests from domain '*'.
 cors = ["*"]
 # Allow connections only using specified addresses.
 hosts = ["all"]
 # Only selected APIs will be exposed over this interface.
-apis = ["web3", "eth", "pubsub", "net", "parity", "parity_pubsub", "traces", "rpc", "shh", "shh_pubsub", "personal", "parity_accounts"]
+apis = ["web3", "eth", "net", "parity", "traces", "rpc", "parity_accounts"]
 # Threads for handling incoming connections for HTTP JSON-RPC server.
 server_threads = 16
 # Turn on additional processing threads in all RPC servers. Setting this to non-zero value allows parallel cpu-heavy queries execution.
