@@ -13,6 +13,7 @@ IPC_PATH = '/home/barahime/esn_services/chaindata/gesc.ipc'  # Parity 노드의 
 TARGET_BLOCK = 6000000  # 스냅샷을 찍을 블록 번호
 DATABASE_FILE = 'balances.db'  # SQLite 데이터베이스 파일명
 OUTPUT_JSON_FILE = 'balances.json'  # 최종 출력될 JSON 파일명
+COMMIT_INTERVAL = 1000  # 데이터베이스 커밋 간격
 
 def main():
     # 시작 시간 기록
@@ -58,66 +59,73 @@ def main():
     conn.commit()
     logging.info("데이터베이스 테이블이 준비되었습니다.")
 
-    # 블록 가져오기
-    logging.info(f"블록 {TARGET_BLOCK} 가져오기...")
-    block = w3.eth.get_block(TARGET_BLOCK, full_transactions=True)
-    logging.info(f"블록 {TARGET_BLOCK} 가져오기 완료.")
+    # 블록 0부터 TARGET_BLOCK까지 순회
+    logging.info(f"블록 0부터 {TARGET_BLOCK}까지 순회하여 데이터 수집을 시작합니다.")
+    total_blocks = TARGET_BLOCK + 1  # 블록 번호는 0부터 시작하므로 +1
+    commit_counter = 0  # 커밋 카운터 초기화
 
-    # 주소 집합 초기화
-    addresses = set()
-
-    # 트랜잭션에서 주소 수집 및 거래 내역 저장
-    logging.info("트랜잭션 처리 중...")
-    for tx in tqdm(block.transactions):
-        from_address = tx['from']
-        to_address = tx['to']
-
-        if from_address:
-            addresses.add(Web3.to_checksum_address(from_address))
-        if to_address:
-            addresses.add(Web3.to_checksum_address(to_address))
-
-        # 트랜잭션 내역 저장
-        cursor.execute('INSERT OR REPLACE INTO transactions (tx_hash, block_number, timestamp, from_address, to_address, value) VALUES (?, ?, ?, ?, ?, ?)', (
-            tx['hash'].hex(),
-            tx['blockNumber'],
-            block.timestamp,
-            tx['from'],
-            tx['to'],
-            str(tx['value'])
-        ))
-    conn.commit()
-    logging.info("트랜잭션 처리가 완료되었습니다.")
-
-    # 트레이싱을 통한 추가 주소 수집 (엉클 보상 등 포함)
-    logging.info("트레이싱을 통해 추가 주소 수집 중...")
-    traces = w3.manager.request_blocking('trace_block', [hex(TARGET_BLOCK)])
-    for trace in tqdm(traces):
-        if 'action' in trace:
-            action = trace['action']
-            if 'from' in action and action['from']:
-                addresses.add(Web3.to_checksum_address(action['from']))
-            if 'to' in action and action['to']:
-                addresses.add(Web3.to_checksum_address(action['to']))
-            if trace.get('type') == 'reward' and 'author' in trace['action'] and trace['action']['author']:
-                addresses.add(Web3.to_checksum_address(trace['action']['author']))
-    logging.info("트레이싱을 통한 주소 수집이 완료되었습니다.")
-
-    # 주소별 잔액 가져오기 및 데이터베이스에 저장
-    logging.info("주소별 잔액 및 생성 블록 가져오기 중...")
-    for address in tqdm(addresses):
-        if address is None:
-            continue
+    for block_number in tqdm(range(0, total_blocks)):
         try:
-            balance = w3.eth.get_balance(address, TARGET_BLOCK)
+            block = w3.eth.get_block(block_number, full_transactions=True)
         except Exception as e:
-            logging.error(f"잔액을 가져오는 중 오류 발생: {e}")
+            logging.error(f"블록 {block_number}를 가져오는 중 오류 발생: {e}")
             continue
-        if balance > 0:
-            creation_block = get_account_creation_block(w3, address, TARGET_BLOCK)
-            cursor.execute('INSERT OR REPLACE INTO balances (address, balance, creation_block) VALUES (?, ?, ?)', (address, str(balance), creation_block))
+
+        # 트랜잭션 처리
+        for tx in block.transactions:
+            from_address = tx['from']
+            to_address = tx['to']
+
+            # 주소 처리 및 저장
+            process_address(w3, cursor, from_address, block_number)
+            if to_address:
+                process_address(w3, cursor, to_address, block_number)
+
+            # 트랜잭션 내역 저장
+            cursor.execute('INSERT OR IGNORE INTO transactions (tx_hash, block_number, timestamp, from_address, to_address, value) VALUES (?, ?, ?, ?, ?, ?)', (
+                tx['hash'].hex(),
+                tx['blockNumber'],
+                block.timestamp,
+                from_address,
+                to_address,
+                str(tx['value'])
+            ))
+
+            # 스마트 컨트랙트 생성 여부 확인
+            if tx.get('creates'):
+                contract_address = tx['creates']
+                process_address(w3, cursor, contract_address, block_number, is_contract=True)
+
+        # 트레이싱을 통한 추가 주소 수집 (엉클 보상 등 포함)
+        try:
+            traces = w3.manager.request_blocking('trace_block', [hex(block_number)])
+            for trace in traces:
+                if 'action' in trace:
+                    action = trace['action']
+                    if 'from' in action and action['from']:
+                        process_address(w3, cursor, action['from'], block_number)
+                    if 'to' in action and action['to']:
+                        process_address(w3, cursor, action['to'], block_number)
+                if trace.get('type') == 'reward' and 'author' in trace['action'] and trace['action']['author']:
+                    process_address(w3, cursor, trace['action']['author'], block_number)
+        except Exception as e:
+            logging.error(f"블록 {block_number}의 트레이스를 가져오는 중 오류 발생: {e}")
+
+        # 일정 간격으로 커밋
+        commit_counter += 1
+        if commit_counter >= COMMIT_INTERVAL:
+            conn.commit()
+            commit_counter = 0
+
+    # 마지막 커밋
     conn.commit()
-    logging.info("주소별 잔액 및 생성 블록 정보가 저장되었습니다.")
+    logging.info("모든 블록의 처리가 완료되었습니다.")
+
+    # 잔액 업데이트
+    logging.info("주소별 잔액 가져오기 중...")
+    update_balances(w3, cursor, TARGET_BLOCK)
+    conn.commit()
+    logging.info("주소별 잔액 정보가 업데이트되었습니다.")
 
     # 데이터베이스에서 데이터를 가져와 JSON으로 저장
     logging.info("데이터베이스에서 데이터 가져오기 및 JSON으로 저장 중...")
@@ -126,7 +134,7 @@ def main():
 
     with open(OUTPUT_JSON_FILE, 'w') as f:
         json.dump(data, f, indent=4)
-    logging.info(f"잔액 데이터가 '{OUTPUT_JSON_FILE}' 파일로 저장되었습니다.")
+    logging.info(f"모든 주소 정보가 '{OUTPUT_JSON_FILE}' 파일로 저장되었습니다.")
 
     # 총 소요 시간 출력
     elapsed_time = time.time() - start_time
@@ -135,36 +143,35 @@ def main():
     # 연결 종료
     conn.close()
 
-def get_account_creation_block(w3, address, target_block):
-    # 계정의 생성 블록 번호를 찾기 위한 함수
-    # 여기서는 간단히 블록 0부터 target_block까지 이분 탐색을 통해 찾습니다.
+def process_address(w3, cursor, address, current_block, is_contract=False):
+    if not address:
+        return
+    address = Web3.to_checksum_address(address)
 
-    if w3.eth.get_code(address, block_identifier=target_block) != b'':
-        # 스마트 컨트랙트인 경우
-        is_contract = True
+    # 이미 존재하는 주소인지 확인
+    cursor.execute('SELECT creation_block FROM balances WHERE address = ?', (address,))
+    result = cursor.fetchone()
+
+    if result is None:
+        # 신규 주소이므로 생성 블록 기록
+        cursor.execute('INSERT INTO balances (address, balance, creation_block) VALUES (?, ?, ?)', (address, '0', current_block))
     else:
-        # 외부 소유 계정인 경우
-        is_contract = False
+        existing_creation_block = result[0]
+        if current_block < existing_creation_block:
+            # 더 이전 블록에서 등장했으므로 생성 블록 업데이트
+            cursor.execute('UPDATE balances SET creation_block = ? WHERE address = ?', (current_block, address))
 
-    left = 0
-    right = target_block
-    creation_block = target_block
+def update_balances(w3, cursor, target_block):
+    cursor.execute('SELECT address FROM balances')
+    addresses = cursor.fetchall()
 
-    while left <= right:
-        mid = (left + right) // 2
-        code = w3.eth.get_code(address, block_identifier=mid)
-        balance = w3.eth.get_balance(address, block_identifier=mid)
-
-        if is_contract and code != b'':
-            creation_block = mid
-            right = mid - 1
-        elif not is_contract and balance > 0:
-            creation_block = mid
-            right = mid - 1
-        else:
-            left = mid + 1
-
-    return creation_block
+    for row in tqdm(addresses):
+        address = row[0]
+        try:
+            balance = w3.eth.get_balance(address, target_block)
+            cursor.execute('UPDATE balances SET balance = ? WHERE address = ?', (str(balance), address))
+        except Exception as e:
+            logging.error(f"주소 {address}의 잔액을 가져오는 중 오류 발생: {e}")
 
 if __name__ == '__main__':
     main()
