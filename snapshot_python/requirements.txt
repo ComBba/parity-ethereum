@@ -1,2 +1,4 @@
 web3
 tqdm
+mysql-connector-python
+python-dotenv

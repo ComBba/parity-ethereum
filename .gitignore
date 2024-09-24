@@ -44,3 +44,4 @@ out/
 /parity.*
 /*.bak
 /chaindata
+snapshot_python/.env

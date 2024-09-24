@@ -2,18 +2,37 @@
 <html lang="ko">
 <head>
     <meta charset="utf-8">
-    <title>ESN 토큰 스냅샷</title>
+    <title>계정 정보 조회</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            text-align: center;
+            padding-top: 50px;
+        }
+        input[type="text"] {
+            width: 400px;
+            padding: 10px;
+            font-size: 16px;
+        }
+        input[type="submit"] {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin-left: 10px;
+        }
+        .container {
+            display: inline-block;
+            text-align: left;
+        }
+    </style>
 </head>
 <body>
-    <h1>ESN 토큰 스냅샷</h1>
-    <p>블록 번호 {{ target_block }} 에서의 계정 정보 및 거래 내역을 제공합니다.</p>
-    <ul>
-        <li><a href="{{ url_for('accounts') }}">계정 목록 보기</a></li>
-        <li>계정 주소로 검색하기:</li>
+    <h1>계정 정보 조회</h1>
+    <div class="container">
         <form action="{{ url_for('account_detail') }}" method="get">
-            <input type="text" name="address" placeholder="계정 주소 입력">
-            <input type="submit" value="검색">
+            <label for="address">계정 주소를 입력하세요:</label><br>
+            <input type="text" id="address" name="address" required><br><br>
+            <input type="submit" value="조회">
         </form>
-    </ul>
+    </div>
 </body>
 </html>

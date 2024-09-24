@@ -1,37 +1,135 @@
-<!-- account_detail.html 예제 -->
+<!-- account_detail.html -->
 <!doctype html>
 <html lang="ko">
 <head>
     <meta charset="utf-8">
     <title>계정 상세 정보</title>
+    <style>
+        /* 고정너비 폰트 설정 */
+        body {
+            font-family: 'Courier New', Courier, monospace;
+        }
+        /* 테이블 스타일 */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            table-layout: fixed; /* 테이블 셀 너비 고정 */
+        }
+        th, td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            word-wrap: break-word; /* 단어 단위로 줄바꿈 */
+        }
+        /* 제목행 스타일 */
+        th {
+            font-weight: bold;
+            text-align: center;
+            background-color: #f2f2f2;
+        }
+        /* 각 열에 대한 스타일 */
+        td.hash, td.from_address, td.to_address, td.timestamp {
+            text-align: center;
+        }
+        td.block_number, td.value {
+            text-align: right;
+        }
+        /* 블록 번호와 값의 헤더도 오른쪽 정렬 */
+        th.block_number, th.value {
+            text-align: right;
+        }
+        /* 줄바꿈 방지 */
+        .no-wrap {
+            white-space: nowrap;
+        }
+        /* 트랜잭션 해시 축약 표시 */
+        .hash-short {
+            position: relative;
+            cursor: pointer;
+        }
+        /* 커스텀 툴팁 스타일 */
+        .hash-short .tooltip {
+            visibility: hidden;
+            width: auto;
+            max-width: 500px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            padding: 5px;
+            border-radius: 6px;
+
+            /* 위치 설정 */
+            position: absolute;
+            z-index: 1;
+            bottom: 125%; /* 위쪽에 표시되도록 */
+            left: 50%;
+            transform: translateX(-50%);
+
+            /* 애니메이션 효과 */
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .hash-short .tooltip::after {
+            content: "";
+            position: absolute;
+            top: 100%; /* 툴팁 아래에 삼각형 */
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 5px;
+            border-style: solid;
+            border-color: #555 transparent transparent transparent;
+        }
+        .hash-short:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
 </head>
 <body>
     <h1>계정 상세 정보</h1>
     <p><strong>주소:</strong> {{ account['address'] }}</p>
     <p><strong>잔액:</strong> {{ account['balance'] | format_esn }}</p>
-    <p><strong>생성 블록:</strong> {{ account['creation_block'] }}</p>
+    <p><strong>생성 블록:</strong> {{ "{:,}".format(account['creation_block']) }}</p>
     
     <h2>거래 내역</h2>
-    <table border="1">
+    <table>
         <tr>
-            <th>트랜잭션 해시</th>
-            <th>블록 번호</th>
-            <th>타임스탬프</th>
-            <th>보낸 주소</th>
-            <th>받은 주소</th>
-            <th>값</th>
+            <th class="block_number no-wrap">블록 번호</th>
+            <th class="timestamp no-wrap">타임스탬프</th>
+            <th class="from_address">보낸 주소</th>
+            <th class="to_address">받은 주소</th>
+            <th class="value no-wrap">값</th>
+            <th class="hash">트랜잭션 해시</th>
         </tr>
         {% for tx in transactions %}
         <tr>
-            <td>{{ tx['tx_hash'] }}</td>
-            <td>{{ tx['block_number'] }}</td>
-            <td>{{ tx['timestamp'] }}</td>
-            <td>{{ tx['from_address'] }}</td>
-            <td>{{ tx['to_address'] }}</td>
-            <td>{{ tx['value'] | format_esn }}</td>
+            <td class="block_number no-wrap">{{ "{:,}".format(tx['block_number']) }}</td>
+            <td class="timestamp no-wrap">{{ tx['timestamp'] | format_datetime }}</td>
+            <td class="from_address">{{ tx['from_address'] }}</td>
+            <td class="to_address">{{ tx['to_address'] }}</td>
+            <td class="value no-wrap">{{ tx['value'] | format_esn }}</td>
+            <td class="hash">
+                <div class="hash-short">
+                    {{ tx['tx_hash'][:8] }}...{{ tx['tx_hash'][-8:] }}
+                    <span class="tooltip">{{ tx['tx_hash'] }}</span>
+                </div>
+            </td>
         </tr>
         {% endfor %}
     </table>
+    <div>
+        <!-- 페이지네이션 컨트롤 추가 -->
+        {% if total_pages > 1 %}
+        <div style="text-align: center; margin-top: 20px;">
+            {% if tx_page > 1 %}
+            <a href="{{ url_for('account_detail', address=account['address'], tx_page=tx_page-1) }}">&laquo; 이전</a>
+            {% endif %}
+            페이지 {{ tx_page }} / {{ total_pages }}
+            {% if tx_page < total_pages %}
+            <a href="{{ url_for('account_detail', address=account['address'], tx_page=tx_page+1) }}">다음 &raquo;</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
     <a href="{{ url_for('accounts') }}">계정 목록으로 돌아가기</a>
 </body>
 </html>
