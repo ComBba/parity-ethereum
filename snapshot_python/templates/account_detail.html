@@ -110,6 +110,12 @@
     <p><strong>주소:</strong> {{ account['address'] }}</p>
     <p><strong>잔액:</strong> {{ account['balance'] | format_esn }}</p>
     <p><strong>생성 블록:</strong> {{ "{:,}".format(account['creation_block']) }}</p>
+    <!-- 지급된 잔액 표시 -->
+    {% if claimed_amount %}
+    <p><strong>지급된 토큰 양:</strong> {{ claimed_amount }} ESN</p>
+    {% else %}
+    <p><strong>지급된 토큰 양:</strong> 아직 지급되지 않았습니다.</p>
+    {% endif %}
 
     <!-- Claim Tokens 버튼 추가 -->
     <div class="claim-button">

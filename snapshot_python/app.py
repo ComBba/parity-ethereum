@@ -33,8 +33,12 @@ PRIVATE_KEY = os.getenv('PRIVATE_KEY')
 ACCOUNT_ADDRESS = os.getenv('ACCOUNT_ADDRESS')
 CONTRACT_ADDRESS = os.getenv('CONTRACT_ADDRESS')
 
+# Ensure addresses are in checksum format
+ACCOUNT_ADDRESS = Web3.to_checksum_address(ACCOUNT_ADDRESS)
+CONTRACT_ADDRESS = Web3.to_checksum_address(CONTRACT_ADDRESS)
+
 # Load the contract ABI
-with open('ESNToken_abi.json', 'r') as abi_file:
+with open('./ESN/2.ESNToken_abi.json', 'r') as abi_file:
     contract_abi = json.load(abi_file)
 
 # Create the contract instance
@@ -82,6 +86,21 @@ def format_datetime(value):
         return value  # Return original value on error
 
 app.jinja_env.filters['format_datetime'] = format_datetime
+
+def create_claimed_addresses_table():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    # Check if the table exists
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS claimed_addresses (
+            address VARCHAR(42) PRIMARY KEY,
+            amount DECIMAL(38, 18) NOT NULL
+        );
+    ''')
+    conn.commit()
+    cursor.close()
+    conn.close()
+
 
 @app.route('/accounts')
 def accounts():
@@ -143,10 +162,10 @@ def account_detail():
         return 'No address provided.', 400
 
     # Check if address is valid
-    if not w3.isAddress(address):
+    if not Web3.is_address(address):
         return 'Invalid address format.', 400
 
-    address = w3.toChecksumAddress(address)
+    address = w3.to_checksum_address(address)
 
     # Pagination parameters
     tx_page = int(request.args.get('tx_page', 1))
@@ -188,6 +207,12 @@ def account_detail():
         LIMIT %s OFFSET %s
     ''', (address, address, tx_per_page, tx_offset))
     transactions = cursor.fetchall()
+    
+    # Check if the address has already claimed tokens and get the amount
+    cursor.execute('SELECT amount FROM claimed_addresses WHERE address = %s', (address,))
+    claimed_data = cursor.fetchone()
+    claimed_amount = claimed_data['amount'] if claimed_data else None
+
     cursor.close()
     conn.close()
 
@@ -196,7 +221,8 @@ def account_detail():
         account=account,
         transactions=transactions,
         tx_page=tx_page,
-        total_pages=total_pages
+        total_pages=total_pages,
+        claimed_amount=claimed_amount  # 새로운 변수 전달
     )
 
 def claim_tokens(to_address):
@@ -210,12 +236,15 @@ def claim_tokens(to_address):
             conn.close()
             return 'This address has already claimed tokens.'
         
+        # Set the amount to send (e.g., 1000 ESN)
+        amount_to_send = w3.to_wei(1000, 'ether')  # 1000 ESN
+        
         # Build the transaction
-        nonce = w3.eth.getTransactionCount(ACCOUNT_ADDRESS)
-        tx = contract.functions.transfer(to_address, w3.toWei(1000, 'ether')).buildTransaction({
+        nonce = w3.eth.get_transaction_count(ACCOUNT_ADDRESS)
+        tx = contract.functions.transfer(to_address, amount_to_send).buildTransaction({
             'chainId': 97,  # BSC Testnet chain ID
             'gas': 200000,
-            'gasPrice': w3.toWei('10', 'gwei'),
+            'gasPrice': w3.to_wei('10', 'gwei'),
             'nonce': nonce,
         })
         
@@ -223,21 +252,25 @@ def claim_tokens(to_address):
         signed_tx = w3.eth.account.sign_transaction(tx, private_key=PRIVATE_KEY)
         
         # Send the transaction
-        tx_hash = w3.eth.sendRawTransaction(signed_tx.rawTransaction)
+        tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
         
         # Wait for the transaction receipt
-        tx_receipt = w3.eth.waitForTransactionReceipt(tx_hash)
+        tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
         
-        # Record the claim in the database
-        cursor.execute('INSERT INTO claimed_addresses (address) VALUES (%s)', (to_address,))
+        # Convert the amount back to ESN units for storage
+        amount_esn = Decimal(amount_to_send) / Decimal('1000000000000000000')
+        
+        # Record the claim in the database with the amount
+        cursor.execute('INSERT INTO claimed_addresses (address, amount) VALUES (%s, %s)', (to_address, amount_esn))
         conn.commit()
         cursor.close()
         conn.close()
         
-        return f'Tokens have been sent! Transaction hash: {w3.toHex(tx_hash)}'
+        return f'Tokens have been sent! Transaction hash: {w3.to_hex(tx_hash)}'
     except Exception as e:
         logging.error(f'Error sending tokens: {e}')
         return 'There was an error sending tokens.'
 
 if __name__ == '__main__':
+    create_claimed_addresses_table()
     app.run(debug=False)
