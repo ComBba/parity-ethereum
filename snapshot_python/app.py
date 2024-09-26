@@ -230,15 +230,32 @@ def claim_tokens(to_address):
         # Check if the address has already claimed tokens
         conn = get_db_connection()
         cursor = conn.cursor()
+
+        # 이미 청구했는지 확인
         cursor.execute('SELECT * FROM claimed_addresses WHERE address = %s', (to_address,))
         if cursor.fetchone():
             cursor.close()
             conn.close()
             return 'This address has already claimed tokens.'
-        
-        # Set the amount to send (e.g., 1000 ESN)
-        amount_to_send = w3.to_wei(1000, 'ether')  # 1000 ESN
-        
+
+        # balances 테이블에서 잔액 가져오기
+        cursor.execute('SELECT balance FROM balances WHERE address = %s', (to_address,))
+        balance_data = cursor.fetchone()
+        if not balance_data:
+            cursor.close()
+            conn.close()
+            return 'No balance found for this address.'
+
+        # 잔액을 Wei 단위의 정수로 변환
+        balance_str = balance_data[0]  # balance는 문자열로 저장되어 있음
+        amount_to_send = int(balance_str)
+
+        # 잔액이 0보다 큰지 확인
+        if amount_to_send <= 0:
+            cursor.close()
+            conn.close()
+            return 'The balance for this address is zero.'
+
         # Build the transaction
         nonce = w3.eth.get_transaction_count(ACCOUNT_ADDRESS)
         tx = contract.functions.transfer(to_address, amount_to_send).build_transaction({
@@ -247,25 +264,25 @@ def claim_tokens(to_address):
             'gasPrice': w3.to_wei('10', 'gwei'),
             'nonce': nonce,
         })
-        
+
         # Sign the transaction
         signed_tx = w3.eth.account.sign_transaction(tx, private_key=PRIVATE_KEY)
-        
+
         # Send the transaction
         tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
-        
+
         # Wait for the transaction receipt
         tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
-        
+
         # Convert the amount back to ESN units for storage
         amount_esn = Decimal(amount_to_send) / Decimal('1000000000000000000')
-        
+
         # Record the claim in the database with the amount
         cursor.execute('INSERT INTO claimed_addresses (address, amount) VALUES (%s, %s)', (to_address, amount_esn))
         conn.commit()
         cursor.close()
         conn.close()
-        
+
         return f'Tokens have been sent! Transaction hash: {w3.to_hex(tx_hash)}'
     except Exception as e:
         logging.error(f'Error sending tokens: {e}')
