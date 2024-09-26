@@ -1,67 +1,86 @@
-from flask import Flask, render_template, request, redirect, url_for
+#located at /snapshot_python/app.py
+from flask import Flask, render_template, request, redirect, url_for, flash
 import mysql.connector
 from decimal import Decimal
 import logging
 import os
 from dotenv import load_dotenv
 from datetime import datetime
+from web3 import Web3, HTTPProvider
+import json
 
 app = Flask(__name__)
+app.secret_key = 'your_secret_key'  # Replace with your secret key
 
-# 로그 설정
+# Logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# .env 파일 로드
+# Load environment variables
 load_dotenv()
 
-# MySQL 접속 정보 불러오기
+# MySQL connection information
 MYSQLDB_HOST = os.getenv('MYSQLDB_HOST')
 MYSQLDB_USER = os.getenv('MYSQLDB_USER')
 MYSQLDB_PASSWORD = os.getenv('MYSQLDB_PASSWORD')
 MYSQLDB_DATABASE = os.getenv('MYSQLDB_DATABASE')
 
+# Initialize Web3
+BSC_RPC_URL = os.getenv('BSC_RPC_URL')
+w3 = Web3(HTTPProvider(BSC_RPC_URL))
+
+# Load contract and account information
+PRIVATE_KEY = os.getenv('PRIVATE_KEY')
+ACCOUNT_ADDRESS = os.getenv('ACCOUNT_ADDRESS')
+CONTRACT_ADDRESS = os.getenv('CONTRACT_ADDRESS')
+
+# Load the contract ABI
+with open('ESNToken_abi.json', 'r') as abi_file:
+    contract_abi = json.load(abi_file)
+
+# Create the contract instance
+contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=contract_abi)
+
 def get_db_connection():
     """
-    MySQL 데이터베이스 연결을 생성합니다.
+    Create a MySQL database connection.
     """
     conn = mysql.connector.connect(
         host=MYSQLDB_HOST,
         user=MYSQLDB_USER,
         password=MYSQLDB_PASSWORD,
         database=MYSQLDB_DATABASE,
-        autocommit=True  # 자동 커밋 설정
+        autocommit=True  # Auto-commit mode
     )
     return conn
 
 def format_esn_balance(balance_str):
     """
-    Raw balance string (Wei 단위)를 ESN 단위로 변환하고 포맷팅합니다.
-    예: "1000000000000000000" -> "1.000000000000000000 ESN"
+    Convert raw balance string (in Wei) to ESN units and format it.
     """
     try:
-        # 소수점 18자리로 변환
+        # Convert to decimal with 18 decimal places
         balance_decimal = Decimal(balance_str) / Decimal('1000000000000000000')
-        # 18자리 소수점 유지 및 콤마 추가
+        # Keep 18 decimal places and add commas
         formatted_balance = "{:,.18f} ESN".format(balance_decimal)
         return formatted_balance
     except Exception as e:
-        logging.error(f"잔액 포맷팅 오류: {e}")
-        return balance_str  # 오류 발생 시 원본 문자열 반환
+        logging.error(f"Balance formatting error: {e}")
+        return balance_str  # Return original string on error
 
-# 커스텀 필터 등록
+# Register custom filters
 app.jinja_env.filters['format_esn'] = format_esn_balance
 
 def format_datetime(value):
     """
-    유닉스 타임스탬프를 'YYYY-MM-DD HH:MM:SS' 형식의 문자열로 변환합니다.
+    Convert Unix timestamp to 'YYYY-MM-DD HH:MM:SS' format.
     """
     try:
         dt = datetime.fromtimestamp(value)
         return dt.strftime('%Y-%m-%d %H:%M:%S')
     except Exception as e:
-        logging.error(f"타임스탬프 포맷팅 오류: {e}")
-        return value  # 오류 발생 시 원본 값을 반환
-    
+        logging.error(f"Timestamp formatting error: {e}")
+        return value  # Return original value on error
+
 app.jinja_env.filters['format_datetime'] = format_datetime
 
 @app.route('/accounts')
@@ -117,15 +136,21 @@ def accounts():
 def index():
     return render_template('index.html')
 
-@app.route('/account', methods=['GET'])
+@app.route('/account', methods=['GET', 'POST'])
 def account_detail():
     address = request.args.get('address')
     if not address:
-        return '주소가 제공되지 않았습니다.', 400
+        return 'No address provided.', 400
 
-    # 거래 내역 페이지네이션을 위한 파라미터 처리
+    # Check if address is valid
+    if not w3.isAddress(address):
+        return 'Invalid address format.', 400
+
+    address = w3.toChecksumAddress(address)
+
+    # Pagination parameters
     tx_page = int(request.args.get('tx_page', 1))
-    tx_per_page = 50  # 한 페이지당 표시할 거래 수
+    tx_per_page = 50  # Transactions per page
     tx_offset = (tx_page - 1) * tx_per_page
 
     conn = get_db_connection()
@@ -137,9 +162,15 @@ def account_detail():
     if account is None:
         cursor.close()
         conn.close()
-        return '계정을 찾을 수 없습니다.', 404
+        return 'Account not found.', 404
 
-    # 해당 계정의 총 거래 수 가져오기
+    if request.method == 'POST':
+        # Handle token claim
+        message = claim_tokens(address)
+        flash(message)
+        return redirect(url_for('account_detail', address=address))
+
+    # Total transactions count
     cursor.execute('''
         SELECT COUNT(*) as count FROM transactions
         WHERE from_address = %s OR to_address = %s
@@ -149,7 +180,7 @@ def account_detail():
 
     total_pages = (total_transactions + tx_per_page - 1) // tx_per_page
 
-    # 해당 계정의 거래 내역 가져오기 (페이지네이션 적용)
+    # Fetch transactions (with pagination)
     cursor.execute('''
         SELECT * FROM transactions
         WHERE from_address = %s OR to_address = %s
@@ -168,7 +199,45 @@ def account_detail():
         total_pages=total_pages
     )
 
-# 기타 필요한 라우트 및 함수들...
+def claim_tokens(to_address):
+    try:
+        # Check if the address has already claimed tokens
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM claimed_addresses WHERE address = %s', (to_address,))
+        if cursor.fetchone():
+            cursor.close()
+            conn.close()
+            return 'This address has already claimed tokens.'
+        
+        # Build the transaction
+        nonce = w3.eth.getTransactionCount(ACCOUNT_ADDRESS)
+        tx = contract.functions.transfer(to_address, w3.toWei(1000, 'ether')).buildTransaction({
+            'chainId': 97,  # BSC Testnet chain ID
+            'gas': 200000,
+            'gasPrice': w3.toWei('10', 'gwei'),
+            'nonce': nonce,
+        })
+        
+        # Sign the transaction
+        signed_tx = w3.eth.account.sign_transaction(tx, private_key=PRIVATE_KEY)
+        
+        # Send the transaction
+        tx_hash = w3.eth.sendRawTransaction(signed_tx.rawTransaction)
+        
+        # Wait for the transaction receipt
+        tx_receipt = w3.eth.waitForTransactionReceipt(tx_hash)
+        
+        # Record the claim in the database
+        cursor.execute('INSERT INTO claimed_addresses (address) VALUES (%s)', (to_address,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return f'Tokens have been sent! Transaction hash: {w3.toHex(tx_hash)}'
+    except Exception as e:
+        logging.error(f'Error sending tokens: {e}')
+        return 'There was an error sending tokens.'
 
 if __name__ == '__main__':
     app.run(debug=False)

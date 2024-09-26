@@ -1,4 +1,4 @@
-<!-- account_detail.html -->
+<!-- located at /snapshot_python/templates/account_detail.html -->
 <!doctype html>
 <html lang="ko">
 <head>
@@ -82,14 +82,42 @@
             visibility: visible;
             opacity: 1;
         }
+        /* 메시지 스타일 */
+        .messages {
+            color: red;
+            font-weight: bold;
+        }
+        /* Claim Tokens 버튼 스타일 */
+        .claim-button {
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
     <h1>계정 상세 정보</h1>
+
+    <!-- 플래시 메시지 표시 -->
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="messages">
+        {% for message in messages %}
+          <p>{{ message }}</p>
+        {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
     <p><strong>주소:</strong> {{ account['address'] }}</p>
     <p><strong>잔액:</strong> {{ account['balance'] | format_esn }}</p>
     <p><strong>생성 블록:</strong> {{ "{:,}".format(account['creation_block']) }}</p>
-    
+
+    <!-- Claim Tokens 버튼 추가 -->
+    <div class="claim-button">
+        <form action="{{ url_for('account_detail', address=account['address']) }}" method="post">
+            <input type="submit" value="Claim Tokens">
+        </form>
+    </div>
+
     <h2>거래 내역</h2>
     <table>
         <tr>
