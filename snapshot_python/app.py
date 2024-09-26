@@ -165,7 +165,7 @@ def account_detail():
     if not Web3.is_address(address):
         return 'Invalid address format.', 400
 
-    address = w3.to_checksum_address(address)
+    address = Web3.to_checksum_address(address)
 
     # Pagination parameters
     tx_page = int(request.args.get('tx_page', 1))
@@ -241,7 +241,7 @@ def claim_tokens(to_address):
         
         # Build the transaction
         nonce = w3.eth.get_transaction_count(ACCOUNT_ADDRESS)
-        tx = contract.functions.transfer(to_address, amount_to_send).buildTransaction({
+        tx = contract.functions.transfer(to_address, amount_to_send).build_transaction({
             'chainId': 97,  # BSC Testnet chain ID
             'gas': 200000,
             'gasPrice': w3.to_wei('10', 'gwei'),
@@ -252,7 +252,7 @@ def claim_tokens(to_address):
         signed_tx = w3.eth.account.sign_transaction(tx, private_key=PRIVATE_KEY)
         
         # Send the transaction
-        tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
         
         # Wait for the transaction receipt
         tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
