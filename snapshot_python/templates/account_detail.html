@@ -112,7 +112,7 @@
     <p><strong>생성 블록:</strong> {{ "{:,}".format(account['creation_block']) }}</p>
     <!-- 지급된 잔액 표시 -->
     {% if claimed_amount %}
-    <p><strong>지급된 토큰 양:</strong> {{ claimed_amount }} ESN</p>
+    <p><strong>지급된 토큰 양:</strong> {{ claimed_amount }} | format_esn</p>
     {% else %}
     <p><strong>지급된 토큰 양:</strong> 아직 지급되지 않았습니다.</p>
     {% endif %}
@@ -124,46 +124,40 @@
         </form>
     </div>
 
+    <!-- 트랜잭션 데이터를 로드할 DIV -->
     <h2>거래 내역</h2>
-    <table>
-        <tr>
-            <th class="block_number no-wrap">블록 번호</th>
-            <th class="timestamp no-wrap">타임스탬프</th>
-            <th class="from_address">보낸 주소</th>
-            <th class="to_address">받은 주소</th>
-            <th class="value no-wrap">값</th>
-            <th class="hash">트랜잭션 해시</th>
-        </tr>
-        {% for tx in transactions %}
-        <tr>
-            <td class="block_number no-wrap">{{ "{:,}".format(tx['block_number']) }}</td>
-            <td class="timestamp no-wrap">{{ tx['timestamp'] | format_datetime }}</td>
-            <td class="from_address">{{ tx['from_address'] }}</td>
-            <td class="to_address">{{ tx['to_address'] }}</td>
-            <td class="value no-wrap">{{ tx['value'] | format_esn }}</td>
-            <td class="hash">
-                <div class="hash-short">
-                    {{ tx['tx_hash'][:8] }}...{{ tx['tx_hash'][-8:] }}
-                    <span class="tooltip">{{ tx['tx_hash'] }}</span>
-                </div>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-    <div>
-        <!-- 페이지네이션 컨트롤 추가 -->
-        {% if total_pages > 1 %}
-        <div style="text-align: center; margin-top: 20px;">
-            {% if tx_page > 1 %}
-            <a href="{{ url_for('account_detail', address=account['address'], tx_page=tx_page-1) }}">&laquo; 이전</a>
-            {% endif %}
-            페이지 {{ tx_page }} / {{ total_pages }}
-            {% if tx_page < total_pages %}
-            <a href="{{ url_for('account_detail', address=account['address'], tx_page=tx_page+1) }}">다음 &raquo;</a>
-            {% endif %}
-        </div>
-        {% endif %}
+    <div id="transactions-container">
+        <!-- 여기에 트랜잭션 테이블이 로드됩니다. -->
+        <p><strong> 트랜잭션 테이블</strong>을 로딩중입니다....</p>
+    </div>
+    <!-- 페이지네이션 컨테이너 -->
+    <div id="pagination-container">
+        <!-- 여기에 페이지네이션이 로드됩니다. -->
     </div>
     <a href="{{ url_for('accounts') }}">계정 목록으로 돌아가기</a>
+
+    <!-- AJAX 스크립트 추가 -->
+    <script>
+        function loadTransactions(page) {
+            page = parseInt(page);
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', "{{ url_for('get_transactions', address=account['address']) }}&page=" + page, true);
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    var data = JSON.parse(xhr.responseText);
+                    document.getElementById('transactions-container').innerHTML = data.transactions_html;
+                    document.getElementById('pagination-container').innerHTML = data.pagination_html;
+                } else {
+                    console.error('Failed to load transactions.');
+                }
+            };
+            xhr.send();
+        }
+
+        // 초기 로딩 시 첫 번째 페이지를 로드합니다.
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTransactions(1);
+        });
+    </script>
 </body>
 </html>

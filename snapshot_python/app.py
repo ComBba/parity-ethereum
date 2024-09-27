@@ -1,5 +1,5 @@
 #located at /snapshot_python/app.py
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, render_template_string
 import mysql.connector
 from decimal import Decimal
 import logging
@@ -101,6 +101,9 @@ def create_claimed_addresses_table():
     cursor.close()
     conn.close()
 
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 @app.route('/accounts')
 def accounts():
@@ -150,10 +153,6 @@ def accounts():
     total_pages = (total_accounts + per_page - 1) // per_page
 
     return render_template('accounts.html', accounts=accounts, page=page, total_pages=total_pages, sort=sort, order=order)
-
-@app.route('/')
-def index():
-    return render_template('index.html')
 
 @app.route('/account', methods=['GET', 'POST'])
 def account_detail():
@@ -224,6 +223,47 @@ def account_detail():
         total_pages=total_pages,
         claimed_amount=claimed_amount  # 새로운 변수 전달
     )
+
+@app.route('/get_transactions')
+def get_transactions():
+    address = request.args.get('address')
+    page = int(request.args.get('page', 1))
+    tx_per_page = 50
+    tx_offset = (page - 1) * tx_per_page
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Total transactions count
+    cursor.execute('''
+        SELECT COUNT(*) as count FROM transactions
+        WHERE from_address = %s OR to_address = %s
+    ''', (address, address))
+    result = cursor.fetchone()
+    total_transactions = result['count'] if result else 0
+    total_pages = (total_transactions + tx_per_page - 1) // tx_per_page
+
+    # Fetch transactions
+    cursor.execute('''
+        SELECT block_number, timestamp, from_address, to_address, value, tx_hash FROM transactions
+        WHERE from_address = %s OR to_address = %s
+        ORDER BY block_number DESC
+        LIMIT %s OFFSET %s
+    ''', (address, address, tx_per_page, tx_offset))
+    transactions = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    # 트랜잭션 테이블 HTML 렌더링
+    transactions_html = render_template('transactions_table.html', transactions=transactions)
+    # 페이지네이션 HTML 렌더링
+    pagination_html = render_template('pagination.html', total_pages=total_pages, current_page=page, address=address)
+
+    return jsonify({
+        'transactions_html': transactions_html,
+        'pagination_html': pagination_html
+    })
 
 def claim_tokens(to_address):
     try:

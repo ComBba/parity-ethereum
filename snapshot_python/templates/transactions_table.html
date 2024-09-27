@@ -1,0 +1,26 @@
+<!-- located at /snapshot_python/templates/transactions_table.html -->
+<table>
+    <tr>
+        <th class="block_number no-wrap">블록 번호</th>
+        <th class="timestamp no-wrap">타임스탬프</th>
+        <th class="from_address">보낸 주소</th>
+        <th class="to_address">받은 주소</th>
+        <th class="value no-wrap">값</th>
+        <th class="hash">트랜잭션 해시</th>
+    </tr>
+    {% for tx in transactions %}
+    <tr>
+        <td class="block_number no-wrap">{{ "{:,}".format(tx['block_number']) }}</td>
+        <td class="timestamp no-wrap">{{ tx['timestamp'] | format_datetime }}</td>
+        <td class="from_address">{{ tx['from_address'] }}</td>
+        <td class="to_address">{{ tx['to_address'] }}</td>
+        <td class="value no-wrap">{{ tx['value'] | format_esn }}</td>
+        <td class="hash">
+            <div class="hash-short">
+                {{ tx['tx_hash'][:8] }}...{{ tx['tx_hash'][-8:] }}
+                <span class="tooltip">{{ tx['tx_hash'] }}</span>
+            </div>
+        </td>
+    </tr>
+    {% endfor %}
+</table>

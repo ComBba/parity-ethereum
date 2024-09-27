@@ -1,0 +1,12 @@
+<!-- located at /snapshot_python/templates/pagination.html -->
+{% if total_pages > 1 %}
+<div style="text-align: center; margin-top: 20px;">
+    {% if current_page > 1 %}
+    <a href="javascript:void(0);" onclick="loadTransactions('{{ current_page | int - 1 }}')">&laquo; 이전</a>
+    {% endif %}
+    페이지 {{ current_page }} / {{ total_pages }}
+    {% if current_page < total_pages %}
+    <a href="javascript:void(0);" onclick="loadTransactions('{{ current_page | int + 1 }}')">다음 &raquo;</a>
+    {% endif %}
+</div>
+{% endif %}
