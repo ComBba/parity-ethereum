@@ -166,11 +166,6 @@ def account_detail():
 
     address = Web3.to_checksum_address(address)
 
-    # Pagination parameters
-    tx_page = int(request.args.get('tx_page', 1))
-    tx_per_page = 50  # Transactions per page
-    tx_offset = (tx_page - 1) * tx_per_page
-
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
@@ -187,25 +182,6 @@ def account_detail():
         message = claim_tokens(address)
         flash(message)
         return redirect(url_for('account_detail', address=address))
-
-    # Total transactions count
-    cursor.execute('''
-        SELECT COUNT(*) as count FROM transactions
-        WHERE from_address = %s OR to_address = %s
-    ''', (address, address))
-    result = cursor.fetchone()
-    total_transactions = result['count'] if result else 0
-
-    total_pages = (total_transactions + tx_per_page - 1) // tx_per_page
-
-    # Fetch transactions (with pagination)
-    cursor.execute('''
-        SELECT * FROM transactions
-        WHERE from_address = %s OR to_address = %s
-        ORDER BY block_number DESC
-        LIMIT %s OFFSET %s
-    ''', (address, address, tx_per_page, tx_offset))
-    transactions = cursor.fetchall()
     
     # Check if the address has already claimed tokens and get the amount
     cursor.execute('SELECT amount FROM claimed_addresses WHERE address = %s', (address,))
@@ -218,9 +194,6 @@ def account_detail():
     return render_template(
         'account_detail.html',
         account=account,
-        transactions=transactions,
-        tx_page=tx_page,
-        total_pages=total_pages,
         claimed_amount=claimed_amount  # 새로운 변수 전달
     )
 
