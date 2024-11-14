@@ -13,10 +13,10 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 # 필요한 상수 선언
 IPC_PATH = '/home/barahime/esn_services/chaindata/gesc.ipc'  # Parity 노드의 IPC 경로
-TARGET_BLOCK = 6408920  # 스냅샷을 찍을 블록 번호
+TARGET_BLOCK = 6408977  # 스냅샷을 찍을 블록 번호
 OUTPUT_JSON_FILE = 'balances.json'  # 최종 출력될 JSON 파일명
 ETHERSOCIAL_JSON_FILE = '/home/barahime/esn_services/parity-ethereum/ethcore/res/ethereum/ethersocial.json'  # 초기 accounts 파일 경로
-COMMIT_INTERVAL = 10000  # 데이터베이스 커밋 간격
+COMMIT_INTERVAL = 1000  # 데이터베이스 커밋 간격
 
 # .env.local 파일 로드
 load_dotenv()
