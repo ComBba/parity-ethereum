@@ -86,9 +86,10 @@
                     errorMessage.textContent = `${address}는 존재하지 않는 계정입니다.`;
                 } else {
                     errorMessage.textContent = ''; // 에러 메시지 초기화
-                    const balanceInESN = web3.utils.fromWei(balance, 'ether');
-                    alert(`${address}의 잔액은 ${balanceInESN} ESN입니다.`);
-                    document.getElementById('account-form').submit(); // 실제 요청 전송
+                    // const balanceInESN = web3.utils.fromWei(balance, 'ether');
+                    // alert(`${address}의 잔액은 ${balanceInESN} ESN입니다.`);
+                    // 잔액이 있을 경우 계정 상세 페이지로 전환
+                    window.location.href = `/account?address=${address}`;
                 }
             } catch (error) {
                 console.error('계정 확인 중 오류 발생:', error);
