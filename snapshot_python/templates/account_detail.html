@@ -117,13 +117,6 @@
     <p><strong>지급된 토큰 양:</strong> 아직 지급되지 않았습니다.</p>
     {% endif %}
 
-    <!-- Claim Tokens 버튼 추가 -->
-    <div class="claim-button">
-        <form action="{{ url_for('account_detail', address=account['address']) }}" method="post">
-            <input type="submit" value="Claim Tokens">
-        </form>
-    </div>
-
     <!-- 트랜잭션 데이터를 로드할 DIV -->
     <h2>거래 내역</h2>
     <div id="transactions-container">
