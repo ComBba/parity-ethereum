@@ -1,9 +1,8 @@
-<!-- located at /snapshot_python/templates/index.html -->
 <!doctype html>
 <html lang="ko">
 <head>
     <meta charset="utf-8">
-    <title>계정 정보 조회</title>
+    <title>계정 정보 조회 및 MetaMask 토큰 추가</title>
     <style>
         body {
             font-family: 'Courier New', Courier, monospace;
@@ -15,10 +14,12 @@
             padding: 10px;
             font-size: 16px;
         }
-        input[type="submit"] {
+        input[type="submit"], button {
             padding: 10px 20px;
             font-size: 16px;
             margin-left: 10px;
+            margin-top: 10px;
+            cursor: pointer;
         }
         .container {
             display: inline-block;
@@ -27,13 +28,74 @@
     </style>
 </head>
 <body>
-    <h1>계정 정보 조회</h1>
+    <h1>계정 정보 조회 및 MetaMask ESN 토큰 추가</h1>
     <div class="container">
+        <!-- 기본 계정 정보 조회 폼 -->
         <form action="{{ url_for('account_detail') }}" method="get">
             <label for="address">계정 주소를 입력하세요:</label><br>
             <input type="text" id="address" name="address" required><br><br>
             <input type="submit" value="조회">
         </form>
+        <!-- MetaMask에 토큰 추가 버튼 -->
+        <button id="add-token-button" onclick="addEsnToken()">MetaMask에 ESN 토큰 추가</button>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3/dist/web3.min.js"></script>
+    <script>
+        // ESN 토큰 정보
+        const ESN_TOKEN_ADDRESS = '0x0377d09c5a741a481bd79cf38e2d112248eb451e'; // ESN 토큰 주소
+        const ESN_TOKEN_SYMBOL = 'ESN';                  // ESN 토큰 심볼
+        const ESN_TOKEN_DECIMALS = 18;                   // ESN 토큰 소수점 자리수
+        const ESN_TOKEN_IMAGE = 'https://ethersocial.network/images/esn-logo-footer.png'; // 토큰 이미지 (URL)
+
+        function addEsnToken() {
+            // MetaMask 설치 확인
+            if (typeof window.ethereum === 'undefined') {
+                alert('MetaMask가 설치되어 있지 않습니다. 설치 후 다시 시도해주세요.');
+                return;
+            }
+
+            // Web3 초기화
+            const web3 = new Web3(window.ethereum);
+
+            // MetaMask에 토큰 추가 요청
+            window.ethereum.request({
+                method: 'wallet_watchAsset',
+                params: {
+                    type: 'ERC20',
+                    options: {
+                        address: ESN_TOKEN_ADDRESS,
+                        symbol: ESN_TOKEN_SYMBOL,
+                        decimals: ESN_TOKEN_DECIMALS,
+                        image: ESN_TOKEN_IMAGE,
+                    },
+                },
+            })
+            .then((success) => {
+                if (success) {
+                    alert('ESN 토큰이 MetaMask에 성공적으로 추가되었습니다.');
+                } else {
+                    alert('사용자가 ESN 토큰 추가를 취소하였습니다.');
+                }
+            })
+            .catch((error) => {
+                console.error('MetaMask 토큰 추가 중 오류 발생:', error);
+                handleError(error);
+            });
+        }
+
+        // 에러 핸들링 함수
+        function handleError(error) {
+            let errorMessage = '알 수 없는 오류가 발생했습니다.';
+            if (error.code === 4001) {
+                errorMessage = '사용자가 요청을 거부했습니다.';
+            } else if (error.code === -32002) {
+                errorMessage = 'MetaMask 요청이 이미 진행 중입니다. MetaMask를 확인해주세요.';
+            } else if (error.message) {
+                errorMessage = `오류: ${error.message}`;
+            }
+            alert(errorMessage);
+        }
+    </script>
 </body>
 </html>
